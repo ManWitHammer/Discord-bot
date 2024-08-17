@@ -1,0 +1,29 @@
+{
+    "cookie": {
+        "LOGIN_INFO": "AFmmF2swRgIhALleKkWb83BSuYZWI9mwQlcJbbuknmvTccnEMronGxiaAiEAr0-zBfc9uLH0ZMw8i20noU32sWPba0YY6U2IQTHzn0k:QUQ3MjNmeVA1TlN5THVCOFp1aGhfYTVzbnc1ZDgxOUk1WENGTUgwTVo3VGNnSHlEVGFUTEsyVUtxWERrREdkNER6UU95dU1reVRoeWhpS003QlJ5TlVReFNmSVlEUTZzTEx2UlFVcTBtZWhLMEdsVFVuNUc3Y0VGREZMcnJQZ0xSemdLN01mdk1UTzZLbVdFUlNUc0pBU1JVMmN6WlAzU3Jn",
+        "HSID": "AtezWMBr5iOC0zoQJ",
+        "SSID": "A6EK6cAc_vSfBE9W6",
+        "APISID": "0Mz3__DFIyBZoKPJ/Aidz7BIBz4tPKHTfg",
+        "SAPISID": "Tp2GAGOzLImc2F3P/AAMttgaeycOPECMbN",
+        "__Secure-1PAPISID": "Tp2GAGOzLImc2F3P/AAMttgaeycOPECMbN",
+        "__Secure-3PAPISID": "Tp2GAGOzLImc2F3P/AAMttgaeycOPECMbN",
+        "YSC": "hKiLjhwRRKE",
+        "VISITOR_INFO1_LIVE": "yJvwoaC8IiQ",
+        "VISITOR_PRIVACY_METADATA": "CgJCWRIEGgAgag%3D%3D",
+        "SID": "g.a000nAhL1hbYRmpIqGKiovSSqsV-hjjXr_sSu9X7De0oogPnGHQsfxaiiHZ6QWL_04aDJb-VkwACgYKAdESARASFQHGX2MiIvf3iGvCkeTEhMcT41a-8hoVAUF8yKr2ESDq0IzssjB20ddcOe0P0076",
+        "__Secure-1PSID": "g.a000nAhL1hbYRmpIqGKiovSSqsV-hjjXr_sSu9X7De0oogPnGHQsYkRWcUlvXJhySLb6AOwSMAACgYKAdwSARASFQHGX2MidRDozxaIyI8jClgqvEYkexoVAUF8yKpr0Yuv87fUFcD8hs2hH3s00076",
+        "__Secure-3PSID": "g.a000nAhL1hbYRmpIqGKiovSSqsV-hjjXr_sSu9X7De0oogPnGHQsLmudQtv1BB399K39lVhPHQACgYKAYcSARASFQHGX2Mie5JNzV3MeEGojls3fWYG2BoVAUF8yKp6L7AajPYDxK84Il2QWxxz0076",
+        "__Secure-1PSIDTS": "sidts-CjEBUFGohw85LkjAO9CuHq14B___9u6KUxqR4jKLFmJfoblWYRCedTLPOSPvm9j7X5NtEAA",
+        "__Secure-3PSIDTS": "sidts-CjEBUFGohw85LkjAO9CuHq14B___9u6KUxqR4jKLFmJfoblWYRCedTLPOSPvm9j7X5NtEAA",
+        "PREF": "f6=40000000&tz=Europe.Minsk&f7=100",
+        "SIDCC": "AKEyXzWYJko_AFD9T-E7vetLLr5fSFxgL-dHAZGZI-iIWWflmTM6i3V4TUdiO7ZY2bHCil7yhA",
+        "__Secure-1PSIDCC": "AKEyXzUR9z2KdznoKzEqRb0GlzALNRJ8GJtjhMmMVZo0VxXjE-bN7LJMU9hh44LyPl4gRdj421o",
+        "__Secure-3PSIDCC": "AKEyXzUfSeBNpLUr-rr9xPun70TEH6ZhxxdFe9ZM8nKoq3CSw6gQ8ESztzT_fcz9TlAYNn1p6ks",
+        "expires": "Sun, 17-Aug-2025 16:59:27 GMT",
+        "path": "/",
+        "domain": ".youtube.com",
+        "priority": "high",
+        "SameSite": "none"
+    },
+    "file": true
+}
