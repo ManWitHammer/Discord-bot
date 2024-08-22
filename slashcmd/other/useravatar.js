@@ -4,7 +4,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName(`useravatar`)
         .setDescription(`Показывает аватарку определённого пользователя на сервере. Пример команды: /useravatar @хэп`)
-        .addUserOption(option => option.setName('user').setDescription('Пользователь для показа аватара')),
+        .addUserOption(option => option.setName('user').setDescription('Пользователь для показа аватара').setRequired(false)),
 
     run: async (client, interaction) => {
         // Получаем упомянутого пользователя из опции

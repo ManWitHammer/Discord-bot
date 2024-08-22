@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Partials, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require("discord.js");
 const fs = require("fs");
 const { readdirSync } = require("fs")
 require("dotenv/config")
@@ -78,6 +78,10 @@ client.login(process.env.TOKEN).catch(e => {
 const rest = new REST({ version: '10' }).setToken(token);
 client.on("ready", async () => {
   try {
+    client.user.setPresence({
+      activities: [{ name: 'на женщин', type: 3 }],
+      status: 'idle',
+    });
     await rest.put(
       Routes.applicationCommands(client.user.id),
       { body: slashcommands },
