@@ -3,36 +3,33 @@ const { SlashCommandBuilder, ChannelType, PermissionsBitField } = require('disco
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('kickvc')
-        .setDescription('Кикает всех пользователей из указанного голосового канала')
+        .setDescription('Кикает всех пользователей из указанного голосового канала или из канала, где находитесь вы')
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.MoveMembers)
+        .setDMPermission(false)
         .addChannelOption(option => 
             option.setName('channel')
                 .setDescription('Голосовой канал, из которого нужно кикнуть всех пользователей')
-                .setRequired(true)
+                .setRequired(false)  // Канал теперь не обязателен
                 .addChannelTypes(ChannelType.GuildVoice)  // Только голосовые каналы
         ),
 
     run: async (client, interaction) => {
-        // Массив с ID ролей, которые должны иметь доступ к команде
-        const requiredRoleIds = ['1273229981115482166', '1273319648460279809'];  // Замените на реальные ID ролей
-
-        // Проверяем, есть ли у пользователя хотя бы одна из необходимых ролей
-        const hasRequiredRole = requiredRoleIds.some(roleId => interaction.member.roles.cache.has(roleId));
-
-        if (!hasRequiredRole) {
-            return interaction.reply({ content: 'У вас нет прав использовать эту команду. Необходима соответствующая роль.', ephemeral: true });
-        }
-
-        // Получаем выбранный голосовой канал
-        const channel = interaction.options.getChannel('channel');
-
         // Проверка прав пользователя
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.MoveMembers)) {
             return interaction.reply({ content: 'У вас нет прав на кик участников из голосовых каналов.', ephemeral: true });
         }
 
-        // Проверка, является ли канал голосовым
-        if (channel.type !== ChannelType.GuildVoice) {
-            return interaction.reply({ content: 'Пожалуйста, укажите действительный голосовой канал.', ephemeral: true });
+        // Получаем выбранный голосовой канал, если он был указан
+        let channel = interaction.options.getChannel('channel');
+
+        // Если канал не указан, берем канал, в котором находится пользователь
+        if (!channel) {
+            channel = interaction.member.voice.channel;
+
+            // Если пользователь не находится в голосовом канале
+            if (!channel) {
+                return interaction.reply({ content: 'Вы не находитесь в голосовом канале и не указали канал для кика.', ephemeral: true });
+            }
         }
 
         // Получение списка участников в канале

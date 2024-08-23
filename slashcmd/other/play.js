@@ -7,9 +7,19 @@ let queue = []; // Очередь треков
 let musicPlay = false
 
 async function fetchTrackDetails(trackId) {
+    const clientID = await play.getFreeClientID();
+    play.setToken({
+        soundcloud: {
+            client_id: clientID
+        }
+    });
     try {
-        const clientId = await play.getFreeClientID();
-        const response = await axios.get(`https://api.soundcloud.com/tracks/${trackId}?client_id=${clientId}`);
+        const response = await axios.get(`https://api.soundcloud.com/tracks/${trackId}`, {
+            params: {
+                client_id: clientID
+            }
+        });
+        console.log(response.data);
         return response.data;
     } catch (error) {
         console.error(`Error fetching details for track ID ${trackId}:`, error);
@@ -17,28 +27,32 @@ async function fetchTrackDetails(trackId) {
     }
   }
 
-async function playNextTrack(player, connection) {
+  async function playNextTrack(player, connection, retries = 0) {
     if (queue.length === 0) {
         // Если в очереди нет треков, уничтожаем соединение
         try {
-            connection.destroy();
-            musicPlay = false
+            if (connection.state.status !== 'destroyed') { // Проверяем, что соединение не уничтожено
+                connection.destroy();
+            }
+            musicPlay = false;
             return;
         } catch (err) {
             console.log(err);
         }
     }
+
     const nextTrack = queue.shift();
-    if (nextTrack !== null && nextTrack.url === undefined) {
-        const details = await fetchTrackDetails(nextTrack.id);
+
+    if (nextTrack !== undefined && nextTrack.url === undefined) {
+        const details = await fetchTrackDetails(nextTrack.id, nextTrack.clientID);
         if (details) {
-          // Обновите трек с новыми данными
-          nextTrack.url = details.permalink_url;
+            nextTrack.url = details.permalink_url;
         }
     }
+
     let audioStream;
     try {
-        audioStream = await play.stream(nextTrack.url);
+        audioStream = await play.stream(nextTrack?.url); // Проверяем наличие nextTrack
         if (!audioStream) {
             throw new Error('Не удалось найти аудиопоток');
         }
@@ -51,14 +65,20 @@ async function playNextTrack(player, connection) {
         connection.subscribe(player);
     } catch (error) {
         console.error(`Ошибка при воспроизведении следующего трека: ${error.message}`);
-        playNextTrack(player, connection); // Попробовать воспроизвести следующий трек в очереди
+        // Ограничиваем количество повторных попыток воспроизведения
+        if (retries < 3) {
+            await playNextTrack(player, connection, retries + 1);
+        } else {
+            console.error('Превышено максимальное количество попыток воспроизведения. Переход к следующему треку.');
+            await playNextTrack(player, connection);
+        }
     }
 }
-
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('playthis')
+        .setName('play')
         .setDescription('Воспроизведение треков из SoundCloud, Spotify и Deezer в голосовом канале!')
+        .setDMPermission(false)
         .addStringOption(option => 
             option.setName('link')
                 .setDescription('Введите ссылку на SoundCloud, Spotify или Deezer')
@@ -126,7 +146,6 @@ module.exports = {
             await interaction.deferReply();
             // Определение источника ссылки
             const url = new URL(link);
-            let audioStream;
             let embedMessage;
 
             // if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
@@ -163,15 +182,11 @@ module.exports = {
 
                     await interaction.editReply({ embeds: [embedMessage] });
 
-                    for (const track of so_info.tracks) {
-                        queue.push({ url: track.permalink, id: track.id });
+                    for (const track of so_info.tracks.slice(0, 5)) {
+                        queue.push({ url: track.permalink, id: track.id, clientID });
                     }
                 } else {
                     console.log("Это трек")
-                    if (!audioStream) {
-                        throw new Error('Не удалось найти аудиопоток на SoundCloud');
-                    }
-
                     const apiUrl = `https://api-v2.soundcloud.com/resolve?url=${link}&client_id=${clientID}`;
                     const response = await fetch(apiUrl);
                     const trackInfo = await response.json();

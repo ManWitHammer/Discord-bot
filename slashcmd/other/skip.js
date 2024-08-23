@@ -4,8 +4,9 @@ let queue = require('./play').queue;
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('skipthis')
+        .setName('skip')
         .setDescription('Пропустить определенное количество треков')
+        .setDMPermission(false)
         .addIntegerOption(option => 
             option.setName('count')
                 .setDescription('Количество треков для пропуска')

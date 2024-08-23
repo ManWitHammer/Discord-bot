@@ -6,9 +6,18 @@ const fs = require('fs');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('xen')
-        .setDescription('Заходит в голосовой канал, воспроизводит MP3 и выходит'),
+        .setDescription('Заходит в голосовой канал, воспроизводит MP3 и выходит')
+        .setDefaultMemberPermissions(null)  // Доступность команды всем пользователям
+        .setDMPermission(false),
 
     run: async (client, interaction) => {
+        const allowedUserId = '984414258701938718'; // Замените на ID пользователя, которому доступна команда
+
+        // Проверка ID пользователя
+        if (interaction.user.id !== allowedUserId) {
+            return interaction.reply({ content: 'Эта команда недоступна для вас.', ephemeral: true });
+        }
+        
         const voiceChannel = interaction.member.voice.channel;
 
         if (!voiceChannel) {
