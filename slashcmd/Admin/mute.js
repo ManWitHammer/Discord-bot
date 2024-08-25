@@ -4,7 +4,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('mute')
         .setDescription('Мутит пользователя на определенное время')
-        .setDefaultMemberPermissions(PermissionsBitField.Flags.MoveMembers)
+        .setDefaultMemberPermissions(PermissionsBitField.Flags.MuteMembers)
         .addUserOption(option =>
             option.setName('target')
                 .setDescription('Пользователь, которого нужно замутить')
@@ -62,14 +62,14 @@ module.exports = {
             const embedMessageToChannel = new EmbedBuilder()
                 .setTitle('Пользователь замучен')
                 .setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({ size: 256, dynamic: true })}` })
-                .setDescription(`Пользователь **${target.user.username}** был замучен`)
+                .setDescription(`Пользователь <@${target.user.id}> был замучен`)
                 .addFields({ name: "На сколько", value: duration, inline: true}, { name: "Причина", value: reason, inline: true})
                 .setColor('Random');
             return interaction.reply({ embeds: [embedMessageToChannel] });
 
         } catch (error) {
             console.error(`Не удалось замутить ${target.user.username}: ${error}`);
-            return interaction.reply({ content: `Не удалось замутить ${target.user.username}.`, ephemeral: true });
+            return interaction.reply({ content: `Не удалось замутить <@${target.user.id}>.`, ephemeral: true });
         }
     }
 };
@@ -77,11 +77,11 @@ module.exports = {
 // Функция для преобразования строки с длительностью в миллисекунды
 function parseDuration(duration) {
     const timeUnits = {
-        s: 1000,         // секунды
-        m: 1000 * 60,    // минуты
-        h: 1000 * 60 * 60, // часы
-        d: 1000 * 60 * 60 * 24, // дни
-        w: 1000 * 60 * 60 * 24 * 7, // недели
+        s: 1000,         
+        m: 1000 * 60,    
+        h: 1000 * 60 * 60, 
+        d: 1000 * 60 * 60 * 24, 
+        w: 1000 * 60 * 60 * 24 * 7
     };
 
     const match = duration.match(/^(\d+)([smhdw])$/);

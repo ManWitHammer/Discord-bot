@@ -7,8 +7,8 @@
     "@discordjs/builders": "^1.6.3",
     "@discordjs/rest": "^1.6.0",
     "@discordjs/voice": "^0.17.0",
+    "@vitalets/google-translate-api": "^9.2.0",
     "axios": "^1.7.4",
-    "crypto": "^1.0.1",
     "discord-api-types": "^0.37.46",
     "discord.js": "^14.11.0",
     "dotenv": "^16.4.5",
@@ -20,11 +20,11 @@
     "libsodium-wrappers": "^0.7.15",
     "lodash.uniqwith": "^4.5.0",
     "moment": "^2.29.4",
+    "mongoose": "^8.5.4",
     "opusscript": "^0.0.8",
     "play-dl": "^1.9.7",
     "tweetnacl": "^1.0.3",
-    "util": "^0.12.5",
-    "ytdl-core": "^4.11.5"
+    "util": "^0.12.5"
   },
   "devDependencies": {
     "nodemon": "^3.1.4"

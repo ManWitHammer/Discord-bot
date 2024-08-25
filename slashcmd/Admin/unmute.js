@@ -54,7 +54,7 @@ module.exports = {
             const embedMessageToChannel = new EmbedBuilder()
                 .setTitle('Мут снят')
                 .setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({ size: 256, dynamic: true })}` })
-                .setDescription(`Пользователь **${target.user.username}** был размучен. Причина: **${reason}**`)
+                .setDescription(`Пользователь <@${target.user.id}> был размучен. Причина: **${reason}**`)
                 .setColor('Random');
             return interaction.reply({ embeds: [embedMessageToChannel] });
 

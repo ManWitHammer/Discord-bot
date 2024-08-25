@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
 const { getVoiceConnection } = require('@discordjs/voice'); 
-let queue = require('./play').queue;
+const Queue = require('../../models/queue.model');
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -14,6 +14,9 @@ module.exports = {
         ),
 
     run: async (client, interaction) => {
+        const guildId = interaction.guildId;
+        const voiceChannelId = interaction.member.voice.channelId;
+        const queueData = await Queue.findOne({ guildId, voiceChannelId })
         // Получаем значение count или устанавливаем его в 1 по умолчанию
         const count = interaction.options.getInteger('count') || 1;
 
@@ -28,25 +31,17 @@ module.exports = {
             return interaction.reply({ content: 'Сейчас ничего не воспроизводится.', ephemeral: true });
         }
 
-        if (!queue || queue.length === 0) {
-            console.log(interaction.guild.id)
-            player.stop();
-            return interaction.reply({ content: 'В очереди нет треков для пропуска.', ephemeral: true });
-        }
-
-        if (count >= queue.length) {
+        if (count >= queueData.queue.length) {
             // Очищаем очередь и останавливаем плеер
-            queue.length = 0;
+            queueData.queue.length = 0;
+            await queueData.save()
             player.stop();
-
-            // Отключаемся от голосового канала
-            connection.destroy();
 
             return interaction.reply({ content: 'Все треки пропущены. Покидаю голосовой канал.', ephemeral: true });
         } else {
             // Удаляем указанное количество треков из очереди
-            queue.splice(0, count - 1);
-
+            queueData.queue.splice(0, count - 1);
+            await queueData.save()
             // Останавливаем текущий трек, что вызовет воспроизведение следующего
             player.stop();
 

@@ -41,7 +41,7 @@ module.exports = {
             try {
                 const embedMessageToUser = new EmbedBuilder()
                     .setTitle('Внимание!')
-                    .setDescription(`Ты был выгнан с сервера ${interaction.guild.name}. Причина: **${reason}**`)
+                    .setDescription(`Вы были выгнаны с сервера ${interaction.guild.name}. Причина: **${reason}**`)
                     .setColor('Random');
                 await target.send({ embeds: [embedMessageToUser] });
             } catch (error) {
@@ -52,12 +52,12 @@ module.exports = {
             const embedMessageToChannel = new EmbedBuilder()
                 .setTitle('Внимание!')
                 .setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({ size: 256, dynamic: true })}` })
-                .setDescription(`Пользователь **${target.username}** был выгнан с сервера. Причина: **${reason}**`)
+                .setDescription(`Пользователь <@${target.id}> был выгнан с сервера. Причина: **${reason}**`)
                 .setColor('Random');
             return interaction.reply({ embeds: [embedMessageToChannel], ephemeral: false });
         } catch (error) {
-            console.error(`Не удалось выгнать ${target.tag}: ${error}`);
-            return interaction.reply({ content: `Не удалось выгнать ${target.tag}.`, ephemeral: true });
+            console.error(`Не удалось выгнать <@${target.id}>: ${error}`);
+            return interaction.reply({ content: `Не удалось выгнать <@${target.id}>.`, ephemeral: true });
         }
     }
 }

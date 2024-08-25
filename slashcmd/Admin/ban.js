@@ -76,14 +76,14 @@ module.exports = {
             const embedMessageToChannel = new EmbedBuilder()
                 .setTitle('Бан выполнен')
                 .setAuthor({ name: `${interaction.user.username}`, iconURL: `${interaction.user.displayAvatarURL({ size: 256, dynamic: true })}` })
-                .setDescription(`Пользователь **${target.username}** был забанен`)
+                .setDescription(`Пользователь <@${target.id}> был забанен`)
                 .addFields({ name: "На сколько", value: duration, inline: true}, { name: "Причина", value: reason, inline: true})
                 .setColor('Random');
             return interaction.reply({ embeds: [embedMessageToChannel], ephemeral: false });
 
         } catch (error) {
             console.error(`Не удалось забанить ${target.tag}: ${error}`);
-            return interaction.reply({ content: `Не удалось забанить ${target.tag}.`, ephemeral: true });
+            return interaction.reply({ content: `Не удалось забанить <@${target.id}>.`, ephemeral: true });
         }
     }
 };
