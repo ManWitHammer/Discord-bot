@@ -37,7 +37,7 @@ const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
 let lastStreamId
-const twitchUsername = 'rostikfacekid';
+const twitchUsername = 'xen88635pugod';
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 let token = process.env.TOKEN
