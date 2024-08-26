@@ -3,6 +3,7 @@ const fs = require("fs");
 const { readdirSync } = require("fs")
 const axios = require('axios');
 const mongoose = require("mongoose")
+const keepAlive = require("./server.js")
 require("dotenv/config")
 const client = new Client({
   partials: [
@@ -133,7 +134,7 @@ require("./events/interactionCreate.js")
 //require("./events/guildMemberRemove.js")
 //require("./events/guildMemberUpdate.js")
 //require("./events/inviteCreate.js")
-
+keepAlive();
 client.login(process.env.TOKEN).catch(e => {
   console.log("инет упал")
 })
