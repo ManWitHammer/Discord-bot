@@ -1,6 +1,7 @@
-const { Client, GatewayIntentBits, Partials, Collection, ActivityType } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, Collection, ActivityType, Intents, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 const { readdirSync } = require("fs")
+const axios = require('axios');
 const mongoose = require("mongoose")
 require("dotenv/config")
 const client = new Client({
@@ -32,9 +33,69 @@ const client = new Client({
     GatewayIntentBits.MessageContent, // enable if you need message content things
   ],
 });
+const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
+const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
+const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
+let lastStreamId
+const twitchUsername = 'rostikfacekid';
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 let token = process.env.TOKEN
+
+async function getTwitchAccessToken() {
+  const response = await axios.post('https://id.twitch.tv/oauth2/token', null, {
+      params: {
+          client_id: TWITCH_CLIENT_ID,
+          client_secret: TWITCH_CLIENT_SECRET,
+          grant_type: 'client_credentials'
+      }
+  });
+  oauthToken = response.data.access_token;
+  return response.data.access_token;
+}
+
+async function getUserId() {
+  try {
+      const response = await axios.get('https://api.twitch.tv/helix/users', {
+          params: { login: twitchUsername },
+          headers: {
+              'Client-ID': TWITCH_CLIENT_ID,
+              'Authorization': `Bearer ${await getTwitchAccessToken()}`
+          }
+      });
+      return response.data.data[0].id;
+  } catch (error) {
+      console.error('Ошибка получения ID пользователя:', error);
+  }
+}
+
+async function getStreamInfo() {
+  const response = await axios.get(`https://api.twitch.tv/helix/streams?user_id=${await getUserId()}`, {
+      headers: {
+          'Client-ID': TWITCH_CLIENT_ID,
+          'Authorization': `Bearer ${await getTwitchAccessToken()}`
+      }
+  });
+  return response.data.data[0] || null;
+}
+
+async function checkStream() {
+  const streamInfo = await getStreamInfo();
+  if (streamInfo && streamInfo.id !== lastStreamId) {
+      lastStreamId = streamInfo.id;
+      const channel = client.channels.cache.get(DISCORD_CHANNEL_ID);
+      if (channel) {
+          const embed = new EmbedBuilder()
+              .setTitle(`${streamInfo.user_name} Сейчас в сети!`)
+              .setDescription(`В данный момент играет в ${streamInfo.game_name}`)
+              .addFields({ name: `${streamInfo.title}`, value: `[Вот ссылка на канал](https://twitch.tv/${streamInfo.user_login})` })
+              .setURL(`https://www.twitch.tv/${streamInfo.user_name}`)
+              .setImage(streamInfo.thumbnail_url.replace('{width}x{height}', '1280x700'))
+              .setColor('Red');
+          channel.send({ embeds: [embed] });
+      }
+  }
+}
 
 module.exports = client;
 client.commands = new Collection()
@@ -80,6 +141,7 @@ const rest = new REST({ version: '10' }).setToken(token);
 client.on("ready", async () => {
   try {
     mongoose.connect(process.env.URI_MONGO);
+    setInterval(checkStream, 60000)
     client.user.setPresence({
       activities: [{ name: 'на женщин', type: 3 }],
       status: 'idle',

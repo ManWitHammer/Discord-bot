@@ -15,10 +15,12 @@ async function playNextTrack(guildId, voiceChannelId) {
     if (!queue || queue.queue.length === 0) {
         connection.destroy();
         connections.delete(key);
+        queue.nowPlaying = null
         return;
     }
 
     const nextTrack = queue.queue.shift();
+    queue.nowPlaying = nextTrack;
     await queue.save();
 
     try {
@@ -140,14 +142,15 @@ module.exports = {
                         .setDescription(`<@${interaction.user.id}> воспроизводит аудио **${trackInfo.title}**`)
                         .addFields({ name: `Длительность: ${formatTime(trackInfo.full_duration)}`, value: `[Вот и данный шедевр](${link})` })
                         .setColor('Orange');
-                    console.log(trackInfo);
                     queue.queue.push({ url: trackInfo.permalink_url, title: trackInfo.title });
                 }
 
             } else if (url.hostname.includes('spotify.com')) {
+                const clientID = await play.getFreeClientID();
+                play.setToken({ soundcloud: { client_id: clientID } });
                 const sp_data = await play.spotify(link);
                 let searched = await play.search(`${sp_data.name}`, { limit: 1, source: { soundcloud: "tracks" } });
-
+                console.log(searched[0])
                 embedMessage = new EmbedBuilder()
                     .setTitle(`${sp_data.artists.map(artist => artist.name).join(", ")}`)
                     .setAuthor({ name: "Spotify", iconURL: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfqf6F3od2aaCpB_2wSudARaUV-RSl-jEhNg&s" })
@@ -158,6 +161,8 @@ module.exports = {
                 queue.queue.push({ url: searched[0].permalink, title: sp_data.name });
                 
             } else if (url.hostname.includes('www.deezer.com')) {
+                const clientID = await play.getFreeClientID();
+                play.setToken({ soundcloud: { client_id: clientID } });
                 let dz_data = await play.deezer(link);
                 let searched = await play.search(`${dz_data.tracks[0].shortTitle}`, { limit: 1, source: { soundcloud: "tracks" } });
 

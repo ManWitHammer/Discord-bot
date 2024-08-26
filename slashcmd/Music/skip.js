@@ -31,12 +31,12 @@ module.exports = {
             return interaction.reply({ content: 'Сейчас ничего не воспроизводится.', ephemeral: true });
         }
 
-        if (count >= queueData.queue.length) {
-            // Очищаем очередь и останавливаем плеер
-            queueData.queue.length = 0;
-            await queueData.save()
-            player.stop();
+        if (count > queueData.queue.length) {
+            // Очищаем очередь
+            queueData.queue = [];
+            await queueData.save();
 
+            player.stop(); // Принудительно останавливаем плеер без перехода в состояние Idle
             return interaction.reply({ content: 'Все треки пропущены. Покидаю голосовой канал.', ephemeral: true });
         } else {
             // Удаляем указанное количество треков из очереди
