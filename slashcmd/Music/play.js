@@ -3,19 +3,28 @@ const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerSta
 const { EmbedBuilder } = require("discord.js");
 const Queue = require('../../models/queue.model');
 const play = require('play-dl');
+const ytdl = require('@distube/ytdl-core');
 require('dotenv').config();
 
 let connections = new Map(); // Хранение соединений и плееров по ключу guildId-voiceChannelId
 
 async function playNextTrack(guildId, voiceChannelId) {
     const key = `${guildId}-${voiceChannelId}`;
-    const { player, connection } = connections.get(key);
+    const connectionData = connections.get(key);
+
+    if (!connectionData) {
+        console.error(`Соединение для ключа ${key} не найдено.`);
+        return;
+    }
+
+    const { player, connection } = connectionData;
     const queue = await Queue.findOne({ guildId, voiceChannelId });
 
     if (!queue || queue.queue.length === 0) {
         connection.destroy();
         connections.delete(key);
-        queue.nowPlaying = null
+        queue.nowPlaying = null;
+        await queue.save();
         return;
     }
 
@@ -24,17 +33,28 @@ async function playNextTrack(guildId, voiceChannelId) {
     await queue.save();
 
     try {
-        const audioStream = await play.stream(nextTrack.url);
-        if (!audioStream || !audioStream.stream || !audioStream.stream.readable) {
-            throw new Error('Аудиопоток недоступен или пуст');
+        const url = new URL(nextTrack.url);
+        if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+            const stream = ytdl(nextTrack.url, { filter: 'audioonly' });
+            console.log(stream);
+            const resource = createAudioResource(stream);
+
+            connection.subscribe(player);
+
+            player.play(resource);
+        } else {
+            const audioStream = await play.stream(nextTrack.url);
+            if (!audioStream || !audioStream.stream || !audioStream.stream.readable) {
+                throw new Error('Аудиопоток недоступен или пуст');
+            }
+
+            const resource = createAudioResource(audioStream.stream, {
+                inputType: audioStream.type,
+            });
+
+            player.play(resource);
+            connection.subscribe(player);
         }
-
-        const resource = createAudioResource(audioStream.stream, {
-            inputType: audioStream.type,
-        });
-
-        player.play(resource);
-        connection.subscribe(player);
     } catch (error) {
         console.error(`Ошибка при воспроизведении трека: ${error.message}`);
         playNextTrack(guildId, voiceChannelId); // Попробовать воспроизвести следующий трек
@@ -135,12 +155,13 @@ module.exports = {
                     const apiUrl = `https://api-v2.soundcloud.com/resolve?url=${link}&client_id=${clientID}`;
                     const response = await fetch(apiUrl);
                     const trackInfo = await response.json();
-
+                    console.log(trackInfo)
                     embedMessage = new EmbedBuilder()
                         .setTitle(`${trackInfo.user.username}`)
                         .setAuthor({ name: "SoundCloud", iconURL: "https://bit.ly/46Vfe0f" })
                         .setDescription(`<@${interaction.user.id}> воспроизводит аудио **${trackInfo.title}**`)
                         .addFields({ name: `Длительность: ${formatTime(trackInfo.full_duration)}`, value: `[Вот и данный шедевр](${link})` })
+                        .setThumbnail(trackInfo.artwork_url)
                         .setColor('Orange');
                     queue.queue.push({ url: trackInfo.permalink_url, title: trackInfo.title });
                 }
@@ -175,6 +196,18 @@ module.exports = {
 
                 queue.queue.push({ url: searched[0].permalink, title: dz_data.tracks[0].shortTitle });
 
+            } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+                const videoInfo = await play.video_info(link);
+                console.log(videoInfo.video_details.thumbnails);
+                embedMessage = new EmbedBuilder()
+                    .setTitle(`${videoInfo.video_details.channel.name}`)
+                    .setAuthor({ name: "Youtube", iconURL: "https://cdn3.iconfinder.com/data/icons/2018-social-media-logotypes/1000/2018_social_media_popular_app_logo_youtube-512.png" })
+                    .setDescription(`<@${interaction.user.id}> добавил трек с Youtube: **${videoInfo.video_details.title}** в очередь`)
+                    .setThumbnail(videoInfo.video_details.thumbnails[2].url)
+                    .addFields({ name: `Длительность: ${formatTime(videoInfo.video_details.durationInSec * 1000)}`, value: `[Слушать трек](${link})` })
+                    .setColor('Red');
+
+                queue.queue.push({ url: videoInfo.video_details.url, title: videoInfo.video_details.title });
             } else {
                 throw new Error('Неподдерживаемый источник');
             }

@@ -3,6 +3,7 @@ const fs = require("fs");
 const { readdirSync } = require("fs")
 const axios = require('axios');
 const mongoose = require("mongoose")
+const Subscription = require('./models/sub.model.js');
 const keepAlive = require("./server.js")
 require("dotenv/config")
 const client = new Client({
@@ -55,49 +56,40 @@ async function getTwitchAccessToken() {
   return response.data.access_token;
 }
 
-async function getUserId() {
-  try {
-      const response = await axios.get('https://api.twitch.tv/helix/users', {
-          params: { login: twitchUsername },
-          headers: {
-              'Client-ID': TWITCH_CLIENT_ID,
-              'Authorization': `Bearer ${await getTwitchAccessToken()}`
-          }
-      });
-      return response.data.data[0].id;
-  } catch (error) {
-      console.error('Ошибка получения ID пользователя:', error);
-  }
-}
-
-async function getStreamInfo() {
-  const response = await axios.get(`https://api.twitch.tv/helix/streams?user_id=${await getUserId()}`, {
+async function getStreamInfo(twitchUsername) {
+  const response = await axios.get('https://api.twitch.tv/helix/streams', {
+      params: { user_login: twitchUsername },
       headers: {
-          'Client-ID': TWITCH_CLIENT_ID,
+          'Client-ID': process.env.TWITCH_CLIENT_ID,
           'Authorization': `Bearer ${await getTwitchAccessToken()}`
       }
   });
   return response.data.data[0] || null;
 }
 
-async function checkStream() {
-  const streamInfo = await getStreamInfo();
-  if (streamInfo && streamInfo.id !== lastStreamId) {
-      lastStreamId = streamInfo.id;
-      const channel = client.channels.cache.get(DISCORD_CHANNEL_ID);
-      if (channel) {
-          const embed = new EmbedBuilder()
-              .setTitle(`${streamInfo.user_name} Сейчас в сети!`)
-              .setDescription(`В данный момент играет в ${streamInfo.game_name}`)
-              .addFields({ name: `${streamInfo.title}`, value: `[Вот ссылка на канал](https://twitch.tv/${streamInfo.user_login})` })
-              .setURL(`https://www.twitch.tv/${streamInfo.user_name}`)
-              .setImage(streamInfo.thumbnail_url.replace('{width}x{height}', '1280x700'))
-              .setColor('Red');
-          channel.send({ embeds: [embed] });
+async function checkStreams() {
+  const subscriptions = await Subscription.find();
+
+  for (const sub of subscriptions) {
+      const streamInfo = await getStreamInfo(sub.twitchUsername);
+      if (streamInfo && streamInfo.id !== sub.lastStreamId) {
+          sub.lastStreamId = streamInfo.id;
+          await sub.save();
+
+          const channel = client.channels.cache.get(sub.discordChannelId);
+          if (channel) {
+              const embed = new EmbedBuilder()
+                  .setTitle(`${streamInfo.user_name} Сейчас в сети!`)
+                  .setDescription(`В данный момент играет в ${streamInfo.game_name}`)
+                  .addFields({ name: `${streamInfo.title}`, value: `[Вот ссылка на канал](https://twitch.tv/${streamInfo.user_login})` })
+                  .setURL(`https://www.twitch.tv/${streamInfo.user_name}`)
+                  .setImage(streamInfo.thumbnail_url.replace('{width}x{height}', '1280x700'))
+                  .setColor('Red');
+              channel.send({ embeds: [embed] });
+          }
       }
   }
 }
-
 module.exports = client;
 client.commands = new Collection()
 client.slashcommands = new Collection()
@@ -141,8 +133,10 @@ client.login(process.env.TOKEN).catch(e => {
 const rest = new REST({ version: '10' }).setToken(token);
 client.on("ready", async () => {
   try {
-    mongoose.connect(process.env.URI_MONGO);
-    setInterval(checkStream, 60000)
+    mongoose.connect(process.env.URI_MONGO, { useNewUrlParser: true, useUnifiedTopology: true })
+      .then(() => console.log('Connected to MongoDB'))
+      .catch(err => console.error('Could not connect to MongoDB...', err));
+    setInterval(checkStreams, 5 * 60000)
     client.user.setPresence({
       activities: [{ name: 'на женщин', type: 3 }],
       status: 'idle',
