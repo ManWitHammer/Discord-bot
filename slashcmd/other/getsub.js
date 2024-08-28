@@ -4,7 +4,7 @@ const Subscription = require('../../models/sub.model.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('getsub')
+        .setName('getsubs')
         .setDescription('Показывает список подписанных каналов на этом сервере'),
 
     run: async (client, interaction) => {
