@@ -1,10 +1,11 @@
 const { SlashCommandBuilder } = require('@discordjs/builders');
+const { PermissionsBitField } = require('discord.js'); 
 const Subscription = require('../../models/sub.model.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('sub')
-        .setDescription('Подписаться на уведомления о стримах Twitch')
+        .setDescription('Подписаться на уведомления о стримах Twitch, увы только админы могут этим пользоватся')
         .addStringOption(option => 
             option.setName('twitchuser')
                 .setDescription('Имя пользователя Twitch')
@@ -17,6 +18,11 @@ module.exports = {
     run: async (client, interaction) => {
         const twitchUsername = interaction.options.getString('twitchuser');
         const discordChannel = interaction.options.getChannel('channel');
+        const guildId = interaction.guildId;
+
+        if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
+            return interaction.reply({ content: 'Эта команда доступна только администраторам!', ephemeral: true });
+        }
 
         // Проверяем, существует ли уже подписка на этого пользователя и канал
         let subscription = await Subscription.findOne({ twitchUsername, discordChannelId: discordChannel.id });
@@ -28,7 +34,8 @@ module.exports = {
         // Сохраняем новую подписку
         subscription = new Subscription({
             twitchUsername,
-            discordChannelId: discordChannel.id
+            discordChannelId: discordChannel.id,
+            guildId
         });
 
         await subscription.save();
