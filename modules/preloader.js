@@ -9,8 +9,14 @@ function startPreloader() {
   
   function stopPreloader(preloader) {
     clearInterval(preloader);
-    process.stdout.clearLine();  // Clear the preloader line
-    process.stdout.cursorTo(0);  // Move cursor to the beginning of the line
+  
+    if (process.stdout.clearLine) {
+      process.stdout.clearLine();  // Очистка строки, если метод доступен
+      process.stdout.cursorTo(0);  // Перемещение курсора в начало строки
+    } else {
+      process.stdout.write('\r');  // Альтернативное решение для очистки строки
+    }
+    console.log(''); // Добавляем новую строку, чтобы не мешать выводу следующей информации
   }
 
   function updateConsoleLog(progress, message) {
