@@ -154,9 +154,6 @@ module.exports = {
                 play.setToken({ soundcloud: { client_id: clientID } });
 
                 let so_info = await play.soundcloud(link);
-                if (!so_info.tracks) {
-                    return interaction.editReply({ content: 'Не удалось получить информацию о треке. Попробуйте позже.', ephemeral: true });
-                }
                 if (so_info.type === 'playlist') {
                     embedMessage = new EmbedBuilder()
                         .setTitle(`${so_info.name}`)

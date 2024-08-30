@@ -5,6 +5,7 @@ const axios = require('axios');
 const mongoose = require("mongoose")
 const Subscription = require('./models/sub.model.js');
 const keepAlive = require("./server.js")
+const { updateConsoleLog } = require("./modules/preloader.js")
 require("dotenv/config")
 const client = new Client({
   partials: [
@@ -35,14 +36,15 @@ const client = new Client({
     GatewayIntentBits.MessageContent, // enable if you need message content things
   ],
 });
+
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
 const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
-let lastStreamId
+let lastStreamId;
 const twitchUsername = 'xen88635pugod';
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
-let token = process.env.TOKEN
+let token = process.env.TOKEN;
 
 async function getTwitchAccessToken() {
   const response = await axios.post('https://id.twitch.tv/oauth2/token', null, {
@@ -90,55 +92,60 @@ async function checkStreams() {
       }
   }
 }
+
 module.exports = client;
-client.commands = new Collection()
-client.slashcommands = new Collection()
-client.commandaliases = new Collection()
-const commands = []
+client.commands = new Collection();
+client.slashcommands = new Collection();
+client.commandaliases = new Collection();
+const commands = [];
+
 readdirSync('./commands').forEach(async file => {
   const command = await require(`./commands/${file}`);
   if (command) {
-    client.commands.set(command.name, command)
+    client.commands.set(command.name, command);
     commands.push(command.name, command);
     if (command.aliases && Array.isArray(command.aliases)) {
       command.aliases.forEach(alias => {
-        client.commandaliases.set(alias, command.name)
-      })
+        client.commandaliases.set(alias, command.name);
+      });
     }
   }
-})
+});
 
-//slash-command-handler
+// Slash command handler
 const slashcommands = [];
 fs.readdirSync('./slashcmd/').forEach(folder => {
   const commands = fs.readdirSync(`./slashcmd/${folder}`).filter(file => file.endsWith('.js'));
   for (const file of commands) {
     const command = require(`./slashcmd/${folder}/${file}`);
-  slashcommands.push(command.data.toJSON());
-  client.slashcommands.set(command.data.name, command);
-}})
-require("./events/message.js")
-require("./events/ready.js")
-require("./events/interactionCreate.js")
-//require("./events/ifselectmenu.js")
-//require("./events/ifbutton.js")
-//require("./events/guildMemberAdd.js")
-//require("./events/guildMemberRemove.js")
-//require("./events/guildMemberUpdate.js")
-//require("./events/inviteCreate.js")
+    slashcommands.push(command.data.toJSON());
+    client.slashcommands.set(command.data.name, command);
+  }
+});
+
+// Event handlers
+require("./events/message.js");
+require("./events/ready.js");
+require("./events/interactionCreate.js");
+
+updateConsoleLog(0, "Запускаю сервер для бота...")
 keepAlive();
-client.login(process.env.TOKEN).catch(e => {
-  console.log("инет упал")
-})
+
+mongoose.connect(process.env.URI_MONGO)
+  .then(() => {
+    updateConsoleLog(67, "Запускаю самого бота...")
+    client.login(process.env.TOKEN).catch(e => {
+      console.log("инет упал");
+    });
+  })
+  .catch(err => console.error('Could not connect to MongoDB...', err));
+
 const rest = new REST({ version: '10' }).setToken(token);
 client.on("ready", async () => {
   try {
-    mongoose.connect(process.env.URI_MONGO, { useNewUrlParser: true, useUnifiedTopology: true })
-      .then(() => console.log('Connected to MongoDB'))
-      .catch(err => console.error('Could not connect to MongoDB...', err));
-    setInterval(checkStreams, 5 * 60000)
+    setInterval(checkStreams, 5 * 60000);
     client.user.setPresence({
-      activities: [{ name: 'на женщин', type: 3 }],
+      activities: [{ name: 'на женщин', type: ActivityType.Watching }],
       status: 'idle',
     });
     await rest.put(
@@ -148,4 +155,4 @@ client.on("ready", async () => {
   } catch (error) {
     console.error(error);
   }
-})
+});
