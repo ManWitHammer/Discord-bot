@@ -1,9 +1,6 @@
 const express = require('express');
 const server = express();
-
-function updateConsoleLog(progress, message) {
-  process.stdout.write(`\r${progress}% ${message}\n`);  // Write the new log message
-}
+const { updateConsoleLog } = require("./modules/preloader.js")
 
 server.all('/', (req, res) => {
   res.send('Бот запускается');
