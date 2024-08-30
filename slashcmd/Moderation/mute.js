@@ -5,6 +5,7 @@ module.exports = {
         .setName('mute')
         .setDescription('Мутит пользователя на определенное время')
         .setDefaultMemberPermissions(PermissionsBitField.Flags.MuteMembers)
+        .setDMPermission(false)
         .addUserOption(option =>
             option.setName('target')
                 .setDescription('Пользователь, которого нужно замутить')

@@ -3,7 +3,7 @@ const Notice = require("../../models/notice.model")
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('deletenotiсes')
+        .setName('delwarn')
         .setDescription('Удаляет пользователю предупреждение')
         .setDefaultMemberPermissions(PermissionsBitField.Flags.MuteMembers)
         .setDMPermission(false)
@@ -30,8 +30,6 @@ module.exports = {
         if (!target) {
             return interaction.reply({ content: 'Этот пользователь не является участником сервера.', ephemeral: true });
         }
-
-        console.log(target)
 
         if (target.bot) {
             return interaction.reply({ content: 'У бота нет предупреждений', ephemeral: true });

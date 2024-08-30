@@ -11,7 +11,6 @@ run: async (client, interaction, message) => {
     fetch('https://api.giphy.com/v1/gifs/random?api_key=Nn54Pa9miPavjBZLu5y26NyasvOYMhEs&tag=&rating=g')
     .then(response => response.json())
     .then(data => {
-        console.log(data.data.url);
         interaction.reply(data.data.url);
     })
     .catch(error => {

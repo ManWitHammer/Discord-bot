@@ -4,6 +4,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('unmute')
         .setDescription('Снимает мут с пользователя')
+        .setDMPermission(false)
         .setDefaultMemberPermissions(PermissionsBitField.Flags.MuteMembers)
         .addUserOption(option =>
             option.setName('target')

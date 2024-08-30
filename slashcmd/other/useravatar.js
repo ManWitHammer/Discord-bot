@@ -8,13 +8,9 @@ module.exports = {
         .addUserOption(option => option.setName('user').setDescription('Пользователь для показа аватара').setRequired(false)),
 
     run: async (client, interaction) => {
-        // Получаем упомянутого пользователя из опции
         const user = interaction.options.getUser('user') || interaction.user; // Если пользователь не упомянут, используем текущего пользователя
-
-        // Получаем URL аватара
         const avatarURL = user.displayAvatarURL({ size: 1024, dynamic: true });
 
-        // Создаем сообщение с аватаром
         const embed = new EmbedBuilder()
             .setTitle(`${user.username == "loloshara228" ? "(Никита Сигма)" : user.username + "'s"} Avatar `)
             .setImage(avatarURL)

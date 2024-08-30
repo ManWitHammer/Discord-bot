@@ -6,6 +6,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('unsub')
         .setDescription('Отписаться от уведомлений о стримах Twitch, увы только админы могут этим пользоватся')
+        .setDMPermission(false)
         .addStringOption(option => 
             option.setName('twitchuser')
                 .setDescription('Имя пользователя Twitch')

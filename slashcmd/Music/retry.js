@@ -31,6 +31,6 @@ module.exports = {
         await queueData.save();
         player.stop();
 
-        return interaction.reply({ content: 'Этот трек был воспроизведён заново.', ephemeral: true });
+        return interaction.reply('Этот трек воспроизведён заново.');
     }
 }

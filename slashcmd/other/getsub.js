@@ -5,12 +5,12 @@ const Subscription = require('../../models/sub.model.js');
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('getsubs')
-        .setDescription('Показывает список подписанных каналов на этом сервере'),
+        .setDescription('Показывает список подписанных каналов на этом сервере')
+        .setDMPermission(false),
 
     run: async (client, interaction) => {
         const guildId = interaction.guildId;
         const subscription = await Subscription.find({ guildId });
-        console.log(subscription)
 
         if (subscription.length === 0) {
             // Отправляем ответ и завершаем выполнение
@@ -29,8 +29,6 @@ module.exports = {
 
             // Отправляем ответ только один раз
             await interaction.reply({ embeds: [subEmbed], ephemeral: true });
-            console.log(subscription);
         }
-        
     }
 };

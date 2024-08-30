@@ -18,12 +18,9 @@ module.exports = {
 
         const voiceChannelId = voiceConnection.joinConfig.channelId;
         const queueData = await Queue.findOne({ guildId, voiceChannelId })
-        if (!queueData.nowPlaying) {
-            return interaction.reply({ content: 'Сейчас ничего не воспроизводится. Как ты вызвал команду?', ephemeral: true });
-        }
         queueData.queue.unshift(queueData.nowPlaying);
         await queueData.save();
 
-        return interaction.reply({ content: 'Этот трек будет следующим в очереди', ephemeral: true });
+        return interaction.reply('Этот трек будет следующим в очереди');
     }
 }

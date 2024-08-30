@@ -16,19 +16,31 @@ async function playNextTrack(guildId, voiceChannelId) {
         console.error(`Соединение для ключа ${key} не найдено.`);
         return;
     }
+    
 
     const { player, connection } = connectionData;
     const queue = await Queue.findOne({ guildId, voiceChannelId });
-
     if (!queue || queue.queue.length === 0) {
-        connection.destroy();
-        connections.delete(key);
-        queue.nowPlaying = null;
-        await queue.save();
-        return;
+        try {
+            queue.nowPlaying = null;
+            await queue.save();
+
+            if (connection.state.status !== 'destroyed') {
+                connection.destroy();
+            }
+            
+            connections.delete(key);
+            return;
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     const nextTrack = queue.queue.shift();
+    if (!nextTrack) {
+        console.error('Следующий трек не найден.');
+        return;
+    }
     queue.nowPlaying = nextTrack;
     await queue.save();
 
@@ -36,7 +48,6 @@ async function playNextTrack(guildId, voiceChannelId) {
         const url = new URL(nextTrack.url);
         if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
             const stream = ytdl(nextTrack.url, { filter: 'audioonly' });
-            console.log(stream);
             const resource = createAudioResource(stream);
 
             connection.subscribe(player);
@@ -143,19 +154,23 @@ module.exports = {
                 play.setToken({ soundcloud: { client_id: clientID } });
 
                 let so_info = await play.soundcloud(link);
+                if (!so_info.tracks) {
+                    return interaction.editReply({ content: 'Не удалось получить информацию о треке. Попробуйте позже.', ephemeral: true });
+                }
                 if (so_info.type === 'playlist') {
                     embedMessage = new EmbedBuilder()
                         .setTitle(`${so_info.name}`)
                         .setAuthor({ name: "SoundCloud", iconURL: "https://bit.ly/46Vfe0f" })
-                        .setDescription(`<@${interaction.user.id}> добавил альбом **${so_info.name}** в очередь`)
-                        .addFields({ name: `Длительность всех треков: ${formatTime(so_info.durationInMs)}`, value: `[Послушать альбом](${link})` })
+                        .setDescription(`<@${interaction.user.id}> воспроизводит аудио **${so_info.tracks[0].name}**`)
+                        .addFields({ name: `Длительность: ${formatTime(so_info.tracks[0].durationInMs)}`, value: `[Вот и данный шедевр](${so_info.tracks[0].permalink})` })
+                        .setThumbnail(so_info.tracks[0].thumbnail)
                         .setColor('Orange');
                     queue.queue.push({ url: so_info.tracks[0].permalink, title: so_info.tracks[0].title })
                 } else {
                     const apiUrl = `https://api-v2.soundcloud.com/resolve?url=${link}&client_id=${clientID}`;
                     const response = await fetch(apiUrl);
                     const trackInfo = await response.json();
-                    console.log(trackInfo)
+
                     embedMessage = new EmbedBuilder()
                         .setTitle(`${trackInfo.user.username}`)
                         .setAuthor({ name: "SoundCloud", iconURL: "https://bit.ly/46Vfe0f" })
@@ -170,8 +185,9 @@ module.exports = {
                 const clientID = await play.getFreeClientID();
                 play.setToken({ soundcloud: { client_id: clientID } });
                 const sp_data = await play.spotify(link);
+                console.log(sp_data);
                 let searched = await play.search(`${sp_data.name}`, { limit: 1, source: { soundcloud: "tracks" } });
-                console.log(searched[0])
+
                 embedMessage = new EmbedBuilder()
                     .setTitle(`${sp_data.artists.map(artist => artist.name).join(", ")}`)
                     .setAuthor({ name: "Spotify", iconURL: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfqf6F3od2aaCpB_2wSudARaUV-RSl-jEhNg&s" })
@@ -185,20 +201,20 @@ module.exports = {
                 const clientID = await play.getFreeClientID();
                 play.setToken({ soundcloud: { client_id: clientID } });
                 let dz_data = await play.deezer(link);
-                let searched = await play.search(`${dz_data.tracks[0].shortTitle}`, { limit: 1, source: { soundcloud: "tracks" } });
-
+                console.log(dz_data);
+                let searched = await play.search(`${dz_data.shortTitle}`, { limit: 1, source: { soundcloud: "tracks" } });
+                console.log(searched);
                 embedMessage = new EmbedBuilder()
                     .setTitle(`${dz_data.artist.name}`)
                     .setAuthor({ name: "Deezer", iconURL: "https://styles.redditmedia.com/t5_2w20j/styles/communityIcon_mr3txo0yyyyb1.png" })
-                    .setDescription(`<@${interaction.user.id}> добавил трек с Deezer: **${dz_data.tracks[0].shortTitle}** в очередь`)
-                    .addFields({ name: `Длительность: ${formatTime(searched[0].durationInMs)}`, value: `[Слушать трек](${link})` })
+                    .setDescription(`<@${interaction.user.id}> добавил трек с Deezer: **${dz_data.shortTitle}** в очередь`)
+                    .addFields({ name: `Длительность: ${formatTime(searched[0].durationInMs)}`, value: `[Слушать трек](${dz_data.url})` })
                     .setColor('Purple');
 
-                queue.queue.push({ url: searched[0].permalink, title: dz_data.tracks[0].shortTitle });
+                queue.queue.push({ url: searched[0].permalink, title: dz_data.shortTitle });
 
             } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
                 const videoInfo = await play.video_info(link);
-                console.log(videoInfo.video_details.thumbnails);
                 embedMessage = new EmbedBuilder()
                     .setTitle(`${videoInfo.video_details.channel.name}`)
                     .setAuthor({ name: "Youtube", iconURL: "https://cdn3.iconfinder.com/data/icons/2018-social-media-logotypes/1000/2018_social_media_popular_app_logo_youtube-512.png" })
@@ -209,13 +225,13 @@ module.exports = {
 
                 queue.queue.push({ url: videoInfo.video_details.url, title: videoInfo.video_details.title });
             } else {
-                throw new Error('Неподдерживаемый источник');
+                return interaction.editReply({ content: 'Неподдерживаемый источник', ephemeral: true });
             }
 
             await queue.save();
             await interaction.editReply({ embeds: [embedMessage] });
 
-            if (connectionInfo.player.state.status !== AudioPlayerStatus.Playing) {
+            if (connectionInfo.player.state.status !== AudioPlayerStatus.Playing && connectionInfo.player.state.status !== AudioPlayerStatus.Paused) {    
                 playNextTrack(guildId, voiceChannelId); // Начать воспроизведение первого трека в очереди
             }
 
@@ -234,7 +250,8 @@ module.exports = {
                 }
             }
         }
-    }
+    },
+    connections
 };
 
 function formatTime(milliseconds) {

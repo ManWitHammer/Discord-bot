@@ -3,7 +3,7 @@ const Notice = require("../../models/notice.model")
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName('notiсes')
+        .setName('getwarns')
         .setDescription('Показывает все твои предупреждения')
         .setDMPermission(false)
         .addUserOption(option => 

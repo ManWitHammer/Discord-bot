@@ -23,7 +23,7 @@ module.exports = {
         // Получаем текущее соединение
         const connection = getVoiceConnection(interaction.guild.id);
         if (!connection) {
-            return interaction.reply({ content: 'Я не подключен к голосовому каналу.', ephemeral: true });
+            return interaction.reply({ content: 'Нет активного воспроизведения для паузы.', ephemeral: true });
         }
 
         const player = connection.state?.subscription?.player;
@@ -35,17 +35,22 @@ module.exports = {
             // Очищаем очередь
             queueData.queue = [];
             await queueData.save();
-
+            if (player.state.status === 'paused') {
+                player.unpause(); // Продолжает воспроизведение
+            }
             player.stop(); // Принудительно останавливаем плеер без перехода в состояние Idle
-            return interaction.reply({ content: 'Все треки пропущены. Покидаю голосовой канал.', ephemeral: true });
+            return interaction.reply('Все треки пропущены. Покидаю голосовой канал.');
         } else {
             // Удаляем указанное количество треков из очереди
             queueData.queue.splice(0, count - 1);
             await queueData.save()
+            if (player.state.status === 'paused') {
+                return interaction.reply({ content: 'Трек сейчас на паузе, пропиши /resume, чтобы продолжить трек', ephemeral: true })
+            }
             // Останавливаем текущий трек, что вызовет воспроизведение следующего
             player.stop();
 
-            return interaction.reply({ content: `Пропустил ${count} трек(а/ов). Воспроизвожу следующий.`, ephemeral: true });
+            return interaction.reply(`Пропустил ${count} трек(а/ов). Воспроизвожу следующий.`);
         }
     }
 }

@@ -5,6 +5,7 @@ module.exports = {
     data: new SlashCommandBuilder()
         .setName('clean')
         .setDescription('Удаляет указанное количество сообщений')
+        .setDMPermission(false)
         .addIntegerOption(option =>
             option.setName('count')
                 .setDescription('Количество сообщений для удаления')
