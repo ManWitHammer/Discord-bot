@@ -1,6 +1,6 @@
 const express = require('express');
 const server = express();
-const { updateConsoleLog } = require("./modules/preloader.js")
+const { progressBar } = require("./modules/preloader.js")
 
 server.all('/', (req, res) => {
   res.send('Бот запускается');
@@ -8,7 +8,7 @@ server.all('/', (req, res) => {
 
 function keepAlive() {
     server.listen(3000, () => {
-      updateConsoleLog(33, "Пытаюсь подключиться к базе данных...")
+      progressBar.update(2, { message: "Пытаюсь подключиться к базе данных..." });
     });
 }
 

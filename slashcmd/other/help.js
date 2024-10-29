@@ -12,7 +12,7 @@ const commandCategories = {
     'Модерация(ДЛЯ МОДЕРАТОРОВ И АДМИНОВ)': [
         { name: 'ban', description: 'Забанить пользователя на определённое время или навсегда' },
         { name: 'kick', description: 'Выгнать пользователя' },
-        { name: 'kickvc', description: 'Выгоняет всех из определённого голосового канала' },
+        { name: 'kickvc', description: 'Выгонять всех из определённого голосового канала' },
         { name: 'clean', description: 'Удаляет сообщения в чате' },
         { name: 'mute', description: 'Замутить пользователя' },
         { name: 'unmute', description: 'Размутить пользователя' },
@@ -39,6 +39,7 @@ const commandCategories = {
         { name: 'giphy', description: 'Показать рандомную гифку' },
         { name: 'useravatar', description: 'Показать аватар пользователя' },
         { name: 'translate', description: 'Перевести текст на другой язык' },
+        { name: 'profile', description: 'Получить данные о пользователе с выбранной платформы' },
         { name: 'help', description: 'Показать список команд по категориям' }
     ]
 };
@@ -89,7 +90,7 @@ module.exports = {
         });
         collector.on('end', async collected => {
             if (collected.size === 0) {
-                await interaction.editReply({ content: 'Время выбора истекло.', components: [] });
+                return;
             }
         });
     }

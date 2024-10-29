@@ -5,8 +5,9 @@ const axios = require('axios');
 const mongoose = require("mongoose")
 const Subscription = require('./models/sub.model.js');
 const keepAlive = require("./server.js")
-const { updateConsoleLog } = require("./modules/preloader.js")
+const { progressBar } = require("./modules/preloader.js")
 require("dotenv/config")
+
 const client = new Client({
   partials: [
     Partials.Message, // for message
@@ -35,13 +36,67 @@ const client = new Client({
     GatewayIntentBits.DirectMessageTyping, // for dm message typinh
     GatewayIntentBits.MessageContent, // enable if you need message content things
   ],
-});
+})
+
+const YOUTUBE_API_KEY = process.env.GOOGLE_API_KEY
+
+// Fetch the latest video from a YouTube channel by channel ID
+async function getLatestYouTubeVideo(channelId) {
+  try {
+    const response = await axios.get('https://www.googleapis.com/youtube/v3/search', {
+      params: {
+        part: 'snippet',
+        channelId: channelId,
+        order: 'date',
+        maxResults: 1,
+        type: 'video',
+        key: YOUTUBE_API_KEY
+      }
+    });
+    
+    const video = response.data.items[0];
+    if (video) {
+      return {
+        title: video.snippet.title,
+        videoId: video.id.videoId,
+        thumbnail: video.snippet.thumbnails.high.url
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching latest YouTube video:', error);
+    return null;
+  }
+}
+
+// Function to check YouTube channel and notify for a new video
+async function checkYouTubeVideos() {
+  const subscriptions = await Subscription.find();
+
+  for (const sub of subscriptions) {
+    if (!sub.youtubeChannelId) continue;
+
+    const latestVideo = await getLatestYouTubeVideo(sub.youtubeChannelId);
+    if (latestVideo && latestVideo.videoId !== sub.lastVideoId) {
+      sub.lastVideoId = latestVideo.videoId;
+      await sub.save();
+
+      const channel = client.channels.cache.get(sub.discordChannelId);
+      if (channel) {
+        const embed = new EmbedBuilder()
+          .setTitle(`Новое видео на канале ${sub.youtubeChannelName}!`)
+          .setDescription(latestVideo.title)
+          .setURL(`https://www.youtube.com/watch?v=${latestVideo.videoId}`)
+          .setImage(latestVideo.thumbnail)
+          .setColor('Red');
+        channel.send({ embeds: [embed] });
+      }
+    }
+  }
+}
 
 const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID;
 const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET;
-const DISCORD_CHANNEL_ID = process.env.DISCORD_CHANNEL_ID;
-let lastStreamId;
-const twitchUsername = 'xen88635pugod';
 const { REST } = require('@discordjs/rest');
 const { Routes } = require('discord-api-types/v10');
 let token = process.env.TOKEN;
@@ -73,6 +128,9 @@ async function checkStreams() {
   const subscriptions = await Subscription.find();
 
   for (const sub of subscriptions) {
+      // Проверка, есть ли у документа имя пользователя Twitch
+      if (!sub.twitchUsername) continue;
+
       const streamInfo = await getStreamInfo(sub.twitchUsername);
       if (streamInfo && streamInfo.id !== sub.lastStreamId) {
           sub.lastStreamId = streamInfo.id;
@@ -86,7 +144,7 @@ async function checkStreams() {
                   .addFields({ name: `${streamInfo.title}`, value: `[Вот ссылка на канал](https://twitch.tv/${streamInfo.user_login})` })
                   .setURL(`https://www.twitch.tv/${streamInfo.user_name}`)
                   .setImage(streamInfo.thumbnail_url.replace('{width}x{height}', '1280x700'))
-                  .setColor('Red');
+                  .setColor('Purple');
               channel.send({ embeds: [embed] });
           }
       }
@@ -128,12 +186,13 @@ require("./events/message.js");
 require("./events/ready.js");
 require("./events/interactionCreate.js");
 
-updateConsoleLog(0, "Запускаю сервер для бота...")
+progressBar.update(1, { message: "Запускаю сервер для бота..." });
 keepAlive();
 
 mongoose.connect(process.env.URI_MONGO)
   .then(() => {
-    updateConsoleLog(67, "Запускаю самого бота...")
+    progressBar.update(3, { message: "Запускаю самого бота..." });
+    
     client.login(process.env.TOKEN).catch(e => {
       console.log("инет упал");
     });
@@ -144,8 +203,9 @@ const rest = new REST({ version: '10' }).setToken(token);
 client.on("ready", async () => {
   try {
     setInterval(checkStreams, 5 * 60000);
+    setInterval(checkYouTubeVideos, 5 * 60000);
     client.user.setPresence({
-      activities: [{ name: 'на женщин', type: ActivityType.Watching }],
+      activities: [{ name: 'на вас! (=^-ω-^=)', type: ActivityType.Watching }],
       status: 'idle',
     });
     await rest.put(
@@ -154,5 +214,7 @@ client.on("ready", async () => {
     );
   } catch (error) {
     console.error(error);
+  } finally {
+    progressBar.stop()
   }
-});
+})
