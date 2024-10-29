@@ -3,8 +3,6 @@ const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerSta
 const { EmbedBuilder } = require("discord.js")
 const Queue = require('../../models/queue.model')
 const play = require('play-dl')
-const ytdl = require('ytdl-core')
-const ffmpeg = require('fluent-ffmpeg')
 require('dotenv').config()
 const formatTime = require('../../modules/formatTime.js')
 

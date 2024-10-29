@@ -1,10 +1,28 @@
 const { SlashCommandBuilder } = require('@discordjs/builders')
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, getVoiceConnection } = require('@discordjs/voice')
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, VoiceConnectionStatus } = require('@discordjs/voice')
 const { EmbedBuilder } = require("discord.js")
 const Queue = require('../../models/queue.model.js')
 const play = require('play-dl')
 const { connections } = require('./play.js')
 const formatTime = require('../../modules/formatTime.js')
+
+function connectToVoiceChannel(voiceChannelId, guildId, adapterCreator, interaction) {
+    const connection = joinVoiceChannel({
+        channelId: voiceChannelId,
+        guildId: guildId,
+        adapterCreator: adapterCreator,
+    })
+
+    connection.on('stateChange', (oldState, newState) => {
+        if (newState.status === VoiceConnectionStatus.Disconnected) {
+            connections.delete(`${guildId}-${voiceChannelId}`)
+            connection.destroy()
+            interaction.followUp('Соединение уничтожено. Бот был выгнан или отключён.')
+        }
+    })
+
+    return connection
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -28,11 +46,7 @@ module.exports = {
         let connectionInfo = connections.get(key)
 
         if (!connectionInfo) {
-            const connection = joinVoiceChannel({
-                channelId: voiceChannelId,
-                guildId: guildId,
-                adapterCreator: interaction.guild.voiceAdapterCreator,
-            })
+            const connection = connectToVoiceChannel(voiceChannelId, guildId, interaction.guild.voiceAdapterCreator, interaction)
 
             const player = createAudioPlayer({
                 behaviors: {
