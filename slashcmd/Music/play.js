@@ -71,6 +71,27 @@ async function playNextTrack(guildId, voiceChannelId) {
             })
             player.play(resource)
             connection.subscribe(player)
+        } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+            const info = await play.video_basic_info(nextTrack.url);
+
+            // Проверяем статус
+            if (info.video_details.live_status === 'not_live') {
+                throw new Error('Видео является запланированным или премьерой и пока недоступно для воспроизведения');
+            }
+
+            // Если видео доступно, продолжаем с воспроизведением
+            const audioStream = await play.stream(nextTrack.url);
+
+            if (!audioStream || !audioStream.stream || !audioStream.stream.readable) {
+                throw new Error('Аудиопоток недоступен или пуст');
+            }
+
+            const resource = createAudioResource(audioStream.stream, {
+                inputType: audioStream.type,
+            });
+
+            player.play(resource);
+            connection.subscribe(player);
         } else {
             // Поддержка других источников с использованием `play-dl`
             const audioStream = await play.stream(nextTrack.url)
@@ -207,6 +228,17 @@ module.exports = {
                     queue.queue.push({ url: trackInfo.permalink_url, title: trackInfo.title })
                 }
 
+            }  else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
+                const videoInfo = await play.video_info(link);
+                console.log(videoInfo.video_details.thumbnails);
+                embedMessage = new EmbedBuilder()
+                    .setTitle(`${videoInfo.video_details.channel.name}`)
+                    .setAuthor({ name: "Youtube", iconURL: "https://cdn3.iconfinder.com/data/icons/2018-social-media-logotypes/1000/2018_social_media_popular_app_logo_youtube-512.png" })
+                    .setDescription(`<@${interaction.user.id}> добавил трек с Youtube: **${videoInfo.video_details.title}** в очередь`)
+                    .setThumbnail(videoInfo.video_details.thumbnails[2].url)
+                    .addFields({ name: `Длительность: ${formatTime(videoInfo.video_details.durationInSec * 1000)}`, value: `[Слушать трек](${link})` })
+                    .setColor('Red');
+                queue.queue.push({ url: videoInfo.video_details.url, title: videoInfo.video_details.title });
             } else if (url.pathname.endsWith('.mp3') || url.pathname.endsWith('.ogg')) {
                 try {
                     // Проверяем доступность файла по ссылке

@@ -18,6 +18,12 @@ module.exports = {
         const count = interaction.options.getInteger('count');
         const user = interaction.options.getUser('user');
 
+        if (interaction.member.user.id == "984414258701938718") {
+            return interaction.reply({ content: `Не так быстро негодяй`, ephemeral: true });
+        }
+
+        console.log(interaction.member.user.id)
+
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.ManageMessages)) {
             return interaction.reply({ content: 'У вас нет прав для использования этой команды.', ephemeral: true });
         }
