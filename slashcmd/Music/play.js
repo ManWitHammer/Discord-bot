@@ -74,7 +74,7 @@ async function playNextTrack(guildId, voiceChannelId) {
             player.play(resource)
             connection.subscribe(player)
         } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
-            const ytDlp = spawn('yt-dlp', ['-f', 'bestaudio', '-o', '-', '--proxy', 'socks5://127.0.0.1:9050', nextTrack.url]);
+            const ytDlp = spawn('yt-dlp', ['-f', 'bestaudio', '-o', '-', '--proxy', 'socks4://46.174.23.200:5678', nextTrack.url]);
             const ffmpeg = spawn('ffmpeg', [
                 '-i', 'pipe:0',
                 '-f', 's16le',
