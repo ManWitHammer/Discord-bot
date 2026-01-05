@@ -7,6 +7,9 @@ module.exports = {
     .setDescription(`Рандомные гифки из сайта giphy`),
 
     run: async (client, interaction) => {
+        if (!process.env.GIPHY_API_KEY) {
+            return interaction.reply({ embeds: interaction.reply({ content: 'Отсуствует API ключ от GIPHY', ephemeral: true }) });
+        }
         fetch(`https://api.giphy.com/v1/gifs/random?api_key=${process.env.GIPHY_API_KEY}&tag=&rating=g`)
         .then(response => response.json())
         .then(data => {

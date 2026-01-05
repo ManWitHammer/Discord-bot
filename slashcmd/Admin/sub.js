@@ -34,6 +34,9 @@ module.exports = {
         const TWITCH_CLIENT_ID = process.env.TWITCH_CLIENT_ID
         const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET
         const YOUTUBE_API_KEY = process.env.GOOGLE_API_KEY
+        if (!process.env.GOOGLE_API_KEY) {
+            return interaction.reply({ embeds: interaction.reply({ content: 'Отсуствует API ключ от Google', ephemeral: true }) });
+        }
 
         if (!interaction.member.permissions.has(PermissionsBitField.Flags.Administrator)) {
             return interaction.reply({ content: 'Эта команда доступна только администраторам!', ephemeral: true })

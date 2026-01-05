@@ -26,9 +26,11 @@
         "SameSite": "none",
         "Domain": ".youtube.com",
         "Path": "/",
-        "Expires": "Mon, 14-Feb-2022 19:35:41 GMT",
+        "Expires": "Tue, 11-Apr-2023 15:15:53 GMT",
         "Priority": "HIGH",
-        "GPS": "1"
+        "GPS": "1",
+        "__Secure-ROLLOUT_TOKEN": "CNDjss_0io7IxAEQ2N6IgLDhigMY1O_C47_0kQM%3D",
+        "__Secure-YEC": ""
     },
     "file": true
 }

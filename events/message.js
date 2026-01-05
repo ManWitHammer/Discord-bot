@@ -9,7 +9,6 @@ client.on("messageCreate", async (message) => {
     if (!message.guild) return;
     if (message.author.bot) return;
 
-    // Проверка сообщения на наличие плохих слов
     const badWordsEntry = await BadWords.findOne({ guildId: message.guild.id });
     if (badWordsEntry) {
         const badWords = badWordsEntry.badWords;
@@ -35,7 +34,6 @@ client.on("messageCreate", async (message) => {
         command.run(client, message, args);
     }
 
-    // Если команда существует
     if (client.commands.get(command)) {
         try {
             cmd = client.commands.get(command);

@@ -1,5 +1,5 @@
-const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js');
-const { SlashCommandBuilder } = require('@discordjs/builders');
+const { EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder } = require('discord.js')
+const { SlashCommandBuilder } = require('@discordjs/builders')
 
 // Пример категорий команд
 const commandCategories = {
@@ -42,7 +42,7 @@ const commandCategories = {
         { name: 'profile', description: 'Получить данные о пользователе с выбранной платформы' },
         { name: 'help', description: 'Показать список команд по категориям' }
     ]
-};
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -55,43 +55,42 @@ module.exports = {
             .setCustomId('select-category')
             .setPlaceholder('Выберите категорию команд')
             .addOptions(Object.keys(commandCategories).map(category => ({
-                label: category.charAt(0).toUpperCase() + category.slice(1), // Преобразование первой буквы в заглавную
+                label: category.charAt(0).toUpperCase() + category.slice(1),
                 value: category
-            })));
+            })))
 
-        const row = new ActionRowBuilder().addComponents(selectMenu);
+        const row = new ActionRowBuilder().addComponents(selectMenu)
 
         await interaction.reply({
             content: 'Выберите категорию команд:',
             components: [row],
-            ephemeral: true // Сообщение будет видно только пользователю, вызвавшему команду
-        });
+            ephemeral: true
+        })
 
-        // Обработчик события выбора меню
-        const filter = i => i.customId === 'select-category' && i.user.id === interaction.user.id;
-        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 });
+        const filter = i => i.customId === 'select-category' && i.user.id === interaction.user.id
+        const collector = interaction.channel.createMessageComponentCollector({ filter, time: 60000 })
 
         collector.on('collect', async i => {
             try {
-                const category = i.values[0];
-                const commands = commandCategories[category];
+                const category = i.values[0]
+                const commands = commandCategories[category]
 
                 const embed = new EmbedBuilder()
                     .setTitle(`Команды категории: ${category.charAt(0).toUpperCase() + category.slice(1)}`)
                     .setColor('Random')
-                    .setDescription(commands.map(cmd => `**/${cmd.name}** - ${cmd.description}`).join('\n'));
+                    .setDescription(commands.map(cmd => `**/${cmd.name}** - ${cmd.description}`).join('\n'))
 
-                await i.update({ embeds: [embed], components: [] }); // Обновляем сообщение и убираем меню
+                await i.update({ embeds: [embed], components: [] })
             } catch (error) {
                 if (error.code === 10062) {
-                    await interaction.followUp({ content: 'Взаимодействие истекло. Попробуйте снова.', ephemeral: true });
+                    await interaction.followUp({ content: 'Взаимодействие истекло. Попробуйте снова.', ephemeral: true })
                 }
             }
-        });
+        })
         collector.on('end', async collected => {
             if (collected.size === 0) {
-                return;
+                return
             }
-        });
+        })
     }
-};
+}

@@ -1,12 +1,15 @@
 const { SlashCommandBuilder } = require('@discordjs/builders')
-const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, VoiceConnectionStatus } = require('@discordjs/voice')
+const { joinVoiceChannel, createAudioPlayer, createAudioResource, AudioPlayerStatus, NoSubscriberBehavior, VoiceConnectionStatus, StreamType } = require('@discordjs/voice')
 const { EmbedBuilder } = require("discord.js")
 const Queue = require('../../models/queue.model')
 const play = require('play-dl')
 require('dotenv').config()
 const formatTime = require('../../modules/formatTime.js')
+const { spawn } = require('child_process');
+const path = require('path');
 
-let connections = new Map() // Хранение соединений и плееров по ключу guildId-voiceChannelId
+
+let connections = new Map()
 
 function connectToVoiceChannel(voiceChannelId, guildId, adapterCreator, interaction) {
     const connection = joinVoiceChannel({
@@ -15,7 +18,7 @@ function connectToVoiceChannel(voiceChannelId, guildId, adapterCreator, interact
         adapterCreator: adapterCreator,
     })
 
-    connection.on('stateChange', (oldState, newState) => {
+    connection.on('stateChange', (_, newState) => {
         if (newState.status === VoiceConnectionStatus.Disconnected) {
             connections.delete(`${guildId}-${voiceChannelId}`)
             connection.destroy()
@@ -64,36 +67,27 @@ async function playNextTrack(guildId, voiceChannelId) {
     try {
         const url = new URL(nextTrack.url)
 
-        // Проверяем, поддерживает ли URL прямое воспроизведение (mp3, ogg и т.д.)
         if (url.pathname.endsWith('.mp3') || url.pathname.endsWith('.ogg')) {
             const resource = createAudioResource(nextTrack.url, {
-                inlineVolume: true // Включите эту опцию, если хотите регулировать громкость
+                inlineVolume: true 
             })
             player.play(resource)
             connection.subscribe(player)
         } else if (url.hostname.includes('youtube.com') || url.hostname.includes('youtu.be')) {
-            const info = await play.video_basic_info(nextTrack.url);
+            const ytDlp = spawn('yt-dlp', ['-f', 'bestaudio', '-o', '-', nextTrack.url]);
+            const ffmpeg = spawn('ffmpeg', [
+                '-i', 'pipe:0',
+                '-f', 's16le',
+                '-ar', '48000',
+                '-ac', '2',
+                'pipe:1',
+            ]);
 
-            // Проверяем статус
-            if (info.video_details.live_status === 'not_live') {
-                throw new Error('Видео является запланированным или премьерой и пока недоступно для воспроизведения');
-            }
-
-            // Если видео доступно, продолжаем с воспроизведением
-            const audioStream = await play.stream(nextTrack.url);
-
-            if (!audioStream || !audioStream.stream || !audioStream.stream.readable) {
-                throw new Error('Аудиопоток недоступен или пуст');
-            }
-
-            const resource = createAudioResource(audioStream.stream, {
-                inputType: audioStream.type,
-            });
-
+            ytDlp.stdout.pipe(ffmpeg.stdin);
+            const resource = createAudioResource(ffmpeg.stdout, { inputType: StreamType.Raw });
             player.play(resource);
             connection.subscribe(player);
         } else {
-            // Поддержка других источников с использованием `play-dl`
             const audioStream = await play.stream(nextTrack.url)
             if (!audioStream || !audioStream.stream || !audioStream.stream.readable) {
                 throw new Error('Аудиопоток недоступен или пуст')
@@ -108,21 +102,20 @@ async function playNextTrack(guildId, voiceChannelId) {
         }
     } catch (error) {
         console.error(`Ошибка при воспроизведении трека: ${error.message}`)
-        playNextTrack(guildId, voiceChannelId) // Попробовать воспроизвести следующий трек
+        playNextTrack(guildId, voiceChannelId)
     }
 }
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
-        .setDescription('Воспроизведение треков из SoundCloud и Deezer в голосовом канале!')
-        .setDMPermission(false)
+        .setDescription('Воспроизведение треков из SoundCloud, Youtube и Deezer в голосовом канале!')
         .addStringOption(option => 
             option.setName('link')
-                .setDescription('Введите ссылку на SoundCloud или Deezer')
+                .setDescription('Введите ссылку на SoundCloud, Youtube или Deezer')
                 .setRequired(true)),
     
-    run: async (client, interaction) => {
+    run: async (_, interaction) => {
         const link = interaction.options.getString('link')
         const guildId = interaction.guildId
         const voiceChannelId = interaction.member.voice.channelId
@@ -131,11 +124,10 @@ module.exports = {
             return interaction.reply('Вы должны быть в голосовом канале, чтобы использовать эту команду.')
         }
 
-        // Проверка, играет ли бот уже на другом канале в этом же сервере
         const activeConnection = Array.from(connections.keys()).find(key => key.startsWith(`${guildId}-`))
 
         if (activeConnection && activeConnection !== `${guildId}-${voiceChannelId}`) {
-            const [activeGuildId, activeVoiceChannelId] = activeConnection.split('-')
+            const [_, activeVoiceChannelId] = activeConnection.split('-')
             const activeChannel = interaction.guild.channels.cache.get(activeVoiceChannelId)
             return interaction.reply({content: `Не стесняйтесь! Вы можете послушать мелодию с другими участниками этого сервера на канале **${activeChannel.name}**.`, ephemeral: true})
         }
@@ -153,7 +145,6 @@ module.exports = {
         let connectionInfo = connections.get(key)
 
         if (!connectionInfo) {
-            // Используем новую функцию для создания соединения
             const connection = connectToVoiceChannel(voiceChannelId, guildId, interaction.guild.voiceAdapterCreator, interaction)
 
             const player = createAudioPlayer({
@@ -163,7 +154,7 @@ module.exports = {
             })
 
             player.on(AudioPlayerStatus.Idle, () => {
-                playNextTrack(guildId, voiceChannelId) // Воспроизвести следующий трек в очереди
+                playNextTrack(guildId, voiceChannelId) 
             })
 
             player.on('error', err => {
@@ -236,42 +227,9 @@ module.exports = {
                     .setAuthor({ name: "Youtube", iconURL: "https://cdn3.iconfinder.com/data/icons/2018-social-media-logotypes/1000/2018_social_media_popular_app_logo_youtube-512.png" })
                     .setDescription(`<@${interaction.user.id}> добавил трек с Youtube: **${videoInfo.video_details.title}** в очередь`)
                     .setThumbnail(videoInfo.video_details.thumbnails[2].url)
-                    .addFields({ name: `Длительность: ${formatTime(videoInfo.video_details.durationInSec * 1000)}`, value: `[Слушать трек](${link})` })
+                    .addFields({ name: `Длительность: ${formatTime(videoInfo.video_details.durationInSec * 1000)}`, value: `[Смотреть видео](${link})` })
                     .setColor('Red');
                 queue.queue.push({ url: videoInfo.video_details.url, title: videoInfo.video_details.title });
-            } else if (url.pathname.endsWith('.mp3') || url.pathname.endsWith('.ogg')) {
-                try {
-                    // Проверяем доступность файла по ссылке
-                    const response = await fetch(url)
-                    if (!response.ok) {
-                        if (connectionInfo.player.state.status !== AudioPlayerStatus.Playing) {    
-                            connectionInfo.connection.destroy()
-                            connections.delete(key) // Начать воспроизведение первого трека в очереди
-                        }
-                        return interaction.editReply({ content: 'Файл недоступен.', ephemeral: true })
-                    }
-            
-                    // Определяем, какой тип файла и создаем соответствующий Embed
-                    const fileType = url.pathname.endsWith('.mp3') ? '.mp3' : '.ogg'
-                    const iconURL = fileType === '.mp3' 
-                        ? "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSRXsK7yffrKNx1cVvewr94ol8y1_L5l7CT_Q&s" 
-                        : "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA0qPqubxO-ly4-73wLdvJ0f8P7s3_0AZgZg&s"
-                    
-                    embedMessage = new EmbedBuilder()
-                        .setTitle(`Неизвестно`)
-                        .setAuthor({ name: `${fileType} Файл`, iconURL })
-                        .setDescription(`<@${interaction.user.id}> воспроизводит аудио с неизвестного источника`)
-                        .addFields({ name: `Не рекомендую заходить на неизвестный источник, но если НАДО, то...`, value: `[Вот и данный шедевр](${link})` })
-                        .setThumbnail(fileType === '.mp3' 
-                            ? "https://static7.depositphotos.com/1037613/787/i/450/depositphotos_7870398-stock-photo-mp3-music.jpg" 
-                            : "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA0qPqubxO-ly4-73wLdvJ0f8P7s3_0AZgZg&s")
-                        .setColor('Random')
-            
-                    queue.queue.push({ url, title: "Неизвестно" })
-                } catch (error) {
-                    console.error(`Ошибка при проверке доступности файла: ${error}`)
-                    return interaction.editReply({ content: 'Файл недоступен.', ephemeral: true })
-                }
             } else if (url.hostname.includes('www.deezer.com')) {
                 const clientID = await play.getFreeClientID()
                 play.setToken({ soundcloud: { client_id: clientID } })
@@ -295,7 +253,7 @@ module.exports = {
             await interaction.editReply({ embeds: [embedMessage] })
 
             if (connectionInfo.player.state.status !== AudioPlayerStatus.Playing && connectionInfo.player.state.status !== AudioPlayerStatus.Paused) {    
-                playNextTrack(guildId, voiceChannelId) // Начать воспроизведение первого трека в очереди
+                playNextTrack(guildId, voiceChannelId)
             }
 
             await interaction.editReply({ content: 'Трек добавлен в очередь!' })
@@ -303,7 +261,6 @@ module.exports = {
             console.error(`Ошибка: ${error}`)
             await interaction.followUp('Произошла ошибка при подключении к треку.')
             
-            // Проверяем, существует ли connectionInfo и connection, перед тем как попытаться уничтожить
             if (connectionInfo && connectionInfo.connection) {
                 try {
                     connectionInfo.connection.destroy()

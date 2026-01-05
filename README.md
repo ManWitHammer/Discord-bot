@@ -34,9 +34,9 @@ npm i
 3. Настройте переменные окружения: Создайте файл .env в корне проекта и добавьте свой Discord API токен, prefix (С чего ваша команда начинается, к примеру ! или /) и mongo uri:
 
 ```env
-TOKEN = Ваш Discord API токен
-PREFIX = /
-URI_MONGO = соответственно mongo uri
+TOKEN = Ваш Discord API токен (Обязательно)
+PREFIX = / (Обязательно)
+URI_MONGO = соответственно mongo uri из https://www.mongodb.com (Обязательно)
 # Недавно добавил в 1.0.1a для уведомлений о начале стрима на твиче
 TWITCH_CLIENT_ID = Ваш твич клиент ID. Найдёте через api twitch
 TWITCH_CLIENT_SECRET = Найдёте через api twitch
@@ -49,9 +49,7 @@ GOOGLE_API_KEY = можно получить здесь https://console.cloud.go
 ```bash
 node index.js
 ```
-5. Если вы думали, что это все, то вы ошиблись.😈 Чтобы работал стриминговый сервис, такой как Spotify и Youtube, вам нужно будет...
-
-6. Просто заглянуть на https://github.com/play-dl/play-dl/tree/main/instructions. Ведь именно эта библиотека влияет на стриминговые площадки.
+5. Чтобы запускать мелодии из YouTube, установите `yt-dlp` и `ffmpeg`: скачайте `yt-dlp.exe` с https://github.com/yt-dlp/yt-dlp/releases/latest и статический билд `ffmpeg` для Windows с https://www.gyan.dev/ffmpeg/builds. Поместите `yt-dlp.exe` и `ffmpeg.exe` (`ffmpeg.exe` брать из папки bin, если вы не нашли) в корень папки с ботом и перезапустите бота.
 
 <h2>🤝 Вклад</h2>
 Мы приветствуем вклад сообщества! Если вы хотите внести изменения, добавьте новые функции или исправьте ошибки, пожалуйста, создайте Pull Request.
@@ -113,3 +111,7 @@ git push origin feature/YourFeature
 
 1. Исправление бага с проигрывателем
 2. удаление ненужной команды
+
+<h2>1.4a 06/05/2026</h2>
+
+1. Проигрывание мелодии через Youtube ссылку

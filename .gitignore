@@ -1,2 +1,5 @@
 node_modules
 .env
+ffmpeg.exe
+yt-dlp.exe
+package-lock.json

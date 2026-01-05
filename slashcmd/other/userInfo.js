@@ -26,6 +26,9 @@ module.exports = {
         const TWITCH_CLIENT_SECRET = process.env.TWITCH_CLIENT_SECRET
         const platform = interaction.options.getString('платформа')
         let username = interaction.options.getString('никнейм')
+        if (!process.env.GOOGLE_API_KEY) {
+            return interaction.reply({ embeds: interaction.reply({ content: 'Отсуствует API ключ от Google', ephemeral: true }) });
+        }
 
         if (platform === 'youtube') {
             const apiKey = process.env.GOOGLE_API_KEY;
@@ -120,6 +123,9 @@ module.exports = {
             })
 
         } else if (platform === 'steam') {
+            if (!process.env.STEAM_KEY) {
+                return interaction.reply({ content: 'Отсуствует API ключ от Steam', ephemeral: true })
+            }
             if (isNaN(Number(username))) {
                 try {
                     const response = await fetch(`https://api.steampowered.com/ISteamUser/ResolveVanityURL/v1/?key=${process.env.STEAM_KEY}&vanityurl=${username}`);
